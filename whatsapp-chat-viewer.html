@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
+<meta name="theme-color" content="#00a884">
+<title>Chat Archive</title>
+<style>
+:root{
+  --hdr:#f0f2f5; --hdr-txt:#111b21; --hdr-ico:#54656f;
+  --chat-bg:#efeae2; --panel:#ffffff; --panel-2:#f7f8fa;
+  --bubble-in:#ffffff; --bubble-out:#d9fdd3;
+  --txt:#111b21; --txt-2:#667781; --txt-3:#8696a0;
+  --accent:#00a884; --accent-d:#008069; --link:#027eb5;
+  --pill:#ffffff; --sys:#fff3c5; --sys-txt:#5b5540;
+  --line:rgba(11,20,26,.08); --shadow:0 1px .5px rgba(11,20,26,.13);
+  --sel:#0b846f33; --hl:#f7d774;
+  --sb:rgba(11,20,26,.2);
+  --fs:14.8px;
+}
+html[data-theme="dark"]{
+  --hdr:#202c33; --hdr-txt:#e9edef; --hdr-ico:#aebac1;
+  --chat-bg:#0b141a; --panel:#111b21; --panel-2:#202c33;
+  --bubble-in:#202c33; --bubble-out:#005c4b;
+  --txt:#e9edef; --txt-2:#8696a0; --txt-3:#8696a0;
+  --accent:#00a884; --accent-d:#00a884; --link:#53bdeb;
+  --pill:#182229; --sys:#182229; --sys-txt:#8696a0;
+  --line:rgba(233,237,239,.09); --shadow:0 1px .5px rgba(11,20,26,.28);
+  --sel:#00a88433; --hl:#8a6d1f;
+  --sb:rgba(233,237,239,.16);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Roboto,Arial,"Noto Sans",sans-serif;
+  font-size:var(--fs); color:var(--txt); background:var(--chat-bg);
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer;padding:0}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--sb);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+.ico{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hide{display:none !important}
+
+/* ---------- setup screen ---------- */
+#setup{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:linear-gradient(160deg,#0f2b28,#0b141a 55%);color:#e9edef;overflow:auto}
+.setup-card{width:min(560px,100%);background:#111b21;border:1px solid rgba(233,237,239,.09);border-radius:16px;padding:28px 26px 22px}
+.setup-card h1{margin:0 0 6px;font-size:26px;letter-spacing:-.4px;font-weight:600}
+.setup-card p.lede{margin:0 0 20px;color:#8696a0;line-height:1.55;font-size:14.5px}
+.drop{border:1.5px dashed rgba(0,168,132,.5);border-radius:12px;padding:26px 18px;text-align:center;
+  background:rgba(0,168,132,.06);transition:background .15s,border-color .15s}
+.drop.over{background:rgba(0,168,132,.16);border-color:var(--accent)}
+.drop svg{width:40px;height:40px;stroke:var(--accent);margin-bottom:10px}
+.drop b{display:block;font-size:15.5px;margin-bottom:4px}
+.drop span{color:#8696a0;font-size:13.5px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#08221c;font-weight:600;
+  padding:11px 20px;border-radius:22px;font-size:14.5px}
+.btn:hover{background:#06cfa6}
+.btn.ghost{background:transparent;color:#8696a0;border:1px solid rgba(233,237,239,.16);font-weight:500}
+.btn.ghost:hover{color:#e9edef;border-color:rgba(233,237,239,.32)}
+.setup-row{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.note{margin-top:20px;padding-top:16px;border-top:1px solid rgba(233,237,239,.08);color:#8696a0;font-size:12.8px;line-height:1.6}
+.note b{color:#e9edef;font-weight:600}
+.progress{margin-top:18px}
+.bar{height:4px;background:rgba(233,237,239,.12);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.plabel{margin-top:8px;font-size:13px;color:#8696a0}
+.err{margin-top:14px;color:#f4a3a3;background:rgba(244,163,163,.1);border:1px solid rgba(244,163,163,.25);
+  padding:10px 12px;border-radius:8px;font-size:13.2px;line-height:1.5}
+.who{margin-top:18px}
+.who h3{margin:0 0 10px;font-size:15px;font-weight:600}
+.who-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto}
+.who-list button{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
+  background:rgba(233,237,239,.05);border:1px solid transparent;text-align:left;width:100%}
+.who-list button:hover{background:rgba(0,168,132,.14);border-color:rgba(0,168,132,.4)}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:600;
+  color:#fff;flex:none;background-size:cover;background-position:center;overflow:hidden}
+.txtin{background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+  font-size:13.5px;outline:none;width:170px}
+.txtin:focus{border-color:var(--accent)}
+.minibtn{padding:7px 13px;border-radius:16px;border:1px solid var(--line);color:var(--txt-2);font-size:12.5px}
+.minibtn:hover{border-color:var(--accent);color:var(--accent)}
+.person{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.person .pn{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- app shell ---------- */
+#app{height:100%;display:flex;flex-direction:column}
+header.top{display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--hdr);color:var(--hdr-txt);
+  border-bottom:1px solid var(--line);flex:none;padding-top:calc(8px + env(safe-area-inset-top))}
+header.top .av{width:38px;height:38px;font-size:14px}
+.meta{min-width:0;flex:1}
+.meta .nm{font-weight:600;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta .sub{font-size:12.5px;color:var(--txt-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbtn{color:var(--hdr-ico);padding:8px;border-radius:50%;display:grid;place-items:center}
+.hbtn:hover{background:rgba(134,150,160,.16)}
+.hbtn.on{color:var(--accent)}
+
+/* search bar */
+.searchbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+.searchbar input{flex:1;background:var(--panel-2);border:0;border-radius:8px;padding:9px 12px;outline:none;font-size:14px}
+.searchbar input:focus{box-shadow:0 0 0 2px var(--accent) inset}
+.scount{font-size:12.5px;color:var(--txt-2);white-space:nowrap}
+
+/* chat area */
+.wrap{flex:1;position:relative;min-height:0;display:flex}
+#scroller{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;background-color:var(--chat-bg);
+  padding:12px 4% 24px;scroll-behavior:auto}
+html[data-wall="on"] #scroller{background-image:var(--doodle);background-size:412px;background-repeat:repeat}
+html[data-theme="dark"][data-wall="on"] #scroller{opacity:1}
+html[data-theme="dark"] #scroller::before{content:"";position:absolute;inset:0;pointer-events:none}
+#rows{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:2px}
+
+.datepill,.syspill{align-self:center;margin:12px 0 8px;background:var(--pill);color:var(--sys-txt);
+  border-radius:8px;padding:5px 12px;font-size:12.2px;box-shadow:var(--shadow);text-align:center;max-width:80%}
+.datepill{color:var(--txt-2);text-transform:none}
+.syspill{background:var(--sys);margin:6px 0;line-height:1.45}
+html[data-theme="dark"] .syspill{background:var(--sys)}
+
+.msg{display:flex;max-width:min(78%,560px);position:relative}
+.msg.out{align-self:flex-end}
+.msg.in{align-self:flex-start}
+.msg.grp{margin-top:8px}
+.bubble{position:relative;border-radius:8px;padding:6px 8px 6px 9px;box-shadow:var(--shadow);
+  min-width:92px;word-wrap:break-word;overflow-wrap:anywhere}
+.in .bubble{background:var(--bubble-in);border-top-left-radius:8px}
+.out .bubble{background:var(--bubble-out)}
+.msg.grp.in .bubble{border-top-left-radius:0}
+.msg.grp.out .bubble{border-top-right-radius:0}
+.msg.grp.in .bubble::before{content:"";position:absolute;left:-8px;top:0;width:8px;height:13px;
+  background:var(--bubble-in);clip-path:polygon(100% 0,100% 100%,0 0)}
+.msg.grp.out .bubble::before{content:"";position:absolute;right:-8px;top:0;width:8px;height:13px;
+  background:var(--bubble-out);clip-path:polygon(0 0,0 100%,100% 0)}
+.sender{font-size:12.8px;font-weight:600;margin-bottom:2px;line-height:1.2}
+.body{white-space:pre-wrap;line-height:1.32;font-size:var(--fs)}
+.body.big{font-size:2.4em;line-height:1.25}
+.body a{color:var(--link);text-decoration:none}
+.body a:hover{text-decoration:underline}
+.body code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;background:rgba(134,150,160,.16);
+  padding:0 3px;border-radius:3px}
+.body .mono{display:block;font-family:ui-monospace,Menlo,Consolas,monospace;background:rgba(134,150,160,.14);
+  padding:6px 8px;border-radius:5px;margin:2px 0;white-space:pre-wrap}
+.stamp{float:right;margin:5px 0 -3px 12px;font-size:11px;color:var(--txt-2);
+  display:inline-flex;align-items:center;gap:3px;white-space:nowrap;line-height:1}
+.stamprow{display:flex;justify-content:flex-end;margin-top:2px}
+.stamprow .stamp{float:none;margin:0}
+.bubble.mediaonly{padding:3px}
+.bubble.mediaonly .stamp{position:absolute;right:10px;bottom:8px;float:none;margin:0;color:#fff;
+  text-shadow:0 1px 3px rgba(11,20,26,.9);z-index:2}
+.bubble.mediaonly .stamp .tick{fill:#e9edef}
+.bubble.mediaonly .mwrap::after{content:"";position:absolute;left:0;right:0;bottom:0;height:52px;
+  background:linear-gradient(to top,rgba(11,20,26,.42),transparent);pointer-events:none}
+.bubble.mediaonly .mwrap.sticker::after{display:none}
+.bubble.mediaonly .mwrap.sticker~.stamp{color:var(--txt-2);text-shadow:none}
+.stamp .edited{font-size:10.5px;font-style:italic}
+.tick{width:16px;height:11px;stroke:none;fill:#53bdeb}
+.deleted{font-style:italic;color:var(--txt-2);display:flex;align-items:center;gap:5px}
+mark{background:var(--hl);color:inherit;border-radius:2px;padding:0 1px}
+.msg.flash .bubble{animation:flash 1.6s ease-out}
+@keyframes flash{0%,35%{background:var(--sel)}100%{}}
+
+/* media in bubbles */
+.mwrap{margin:-3px -5px 0 -6px;border-radius:6px;overflow:hidden;position:relative;cursor:pointer;background:rgba(134,150,160,.12)}
+.mwrap img,.mwrap video{display:block;width:100%;max-height:min(65vh,420px);object-fit:cover;background:#0007}
+.mwrap.sticker{background:none;margin:0;width:150px}
+.mwrap.ph{width:min(270px,62vw);height:200px}
+.bubble.mediaonly .mwrap{margin:0}
+.mwrap.sticker img{max-height:150px;object-fit:contain}
+.play-o{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.play-o i{width:48px;height:48px;border-radius:50%;background:rgba(11,20,26,.5);display:grid;place-items:center}
+.play-o svg{width:24px;height:24px;fill:#fff;stroke:none;margin-left:3px}
+.mmeta{position:absolute;left:6px;top:6px;background:rgba(11,20,26,.5);color:#fff;font-size:11px;
+  padding:2px 6px;border-radius:4px;display:flex;gap:4px;align-items:center}
+.caption{margin-top:5px}
+.missing{padding:16px 12px;border-radius:6px;background:rgba(134,150,160,.14);color:var(--txt-2);
+  font-size:13px;display:flex;gap:8px;align-items:center;line-height:1.35}
+.missing svg{width:18px;height:18px;flex:none}
+
+/* voice notes */
+.voice{display:flex;align-items:center;gap:9px;padding:3px 2px 2px;min-width:230px;max-width:100%}
+.vplay{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;color:var(--txt-2)}
+.vplay svg{width:26px;height:26px;fill:currentColor;stroke:none}
+.vmid{flex:1;min-width:0}
+.wave{display:flex;align-items:center;gap:2px;height:26px;cursor:pointer}
+.wave i{flex:1;background:var(--txt-3);border-radius:1px;min-width:1.6px;opacity:.55;transition:background .1s}
+.wave i.on{background:var(--accent);opacity:1}
+.vrow{display:flex;align-items:center;gap:6px;margin-top:1px;font-size:11px;color:var(--txt-2)}
+.vrow .mic{width:14px;height:14px;fill:currentColor;stroke:none;color:var(--txt-3)}
+.vrow .mic.played{color:#53bdeb}
+.speed{margin-left:auto;background:rgba(134,150,160,.22);border-radius:11px;padding:2px 7px;font-size:11px;
+  font-weight:600;color:var(--txt-2)}
+.speed.act{background:var(--accent);color:#fff}
+.vav{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;
+  font-weight:600;font-size:15px;position:relative}
+
+/* documents */
+.doc{display:flex;align-items:center;gap:10px;background:rgba(134,150,160,.13);border-radius:6px;padding:10px;
+  margin:-2px -4px 2px -5px;cursor:pointer;min-width:230px}
+.doc:hover{background:rgba(134,150,160,.2)}
+.doc .fi{width:32px;height:38px;flex:none;border-radius:3px;display:grid;place-items:center;color:#fff;
+  font-size:8.5px;font-weight:700;letter-spacing:.3px}
+.doc .dn{flex:1;min-width:0}
+.doc .dt{font-size:13.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc .ds{font-size:11.5px;color:var(--txt-2);margin-top:2px}
+.doc .dl{color:var(--txt-2);padding:6px}
+
+/* jump-to-bottom */
+.fab{position:absolute;right:16px;bottom:20px;width:42px;height:42px;border-radius:50%;background:var(--panel);
+  color:var(--txt-2);display:grid;place-items:center;box-shadow:0 2px 6px rgba(11,20,26,.25);z-index:5;
+  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;transform:translateY(6px)}
+.fab.show{opacity:1;pointer-events:auto;transform:none}
+.floatdate{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--pill);color:var(--txt-2);
+  border-radius:8px;padding:4px 11px;font-size:12px;box-shadow:var(--shadow);z-index:4;opacity:0;
+  transition:opacity .25s;pointer-events:none}
+.floatdate.show{opacity:1}
+
+/* ---------- side panel ---------- */
+.panel{width:400px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;
+  flex-direction:column;min-height:0}
+.panel.hidden{display:none}
+.phdr{display:flex;align-items:center;gap:16px;padding:14px 16px;background:var(--hdr);color:var(--hdr-txt);flex:none;
+  padding-top:calc(14px + env(safe-area-inset-top))}
+.phdr .t{font-weight:600;font-size:16px}
+.tabs{display:flex;border-bottom:1px solid var(--line);flex:none;background:var(--panel)}
+.tabs button{flex:1;padding:12px 4px;font-size:13px;color:var(--txt-2);border-bottom:3px solid transparent;font-weight:500}
+.tabs button.act{color:var(--accent);border-color:var(--accent)}
+.pbody{flex:1;overflow-y:auto;padding:8px 0 24px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px}
+.grid .cell{position:relative;aspect-ratio:1;background:var(--panel-2);cursor:pointer;overflow:hidden}
+.grid .cell img,.grid .cell video{width:100%;height:100%;object-fit:cover;display:block}
+.grid .cell .badge{position:absolute;right:4px;bottom:4px;background:rgba(11,20,26,.6);color:#fff;font-size:10px;
+  padding:1px 5px;border-radius:3px;display:flex;align-items:center;gap:3px}
+.lrow{display:flex;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}
+.lrow:hover{background:var(--panel-2)}
+.lrow .fi{width:34px;height:40px}
+.lrow .lt{flex:1;min-width:0}
+.lrow .l1{font-size:13.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .l2{font-size:12px;color:var(--txt-2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .l3{font-size:12px;color:var(--link);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow{padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.srow:hover{background:var(--panel-2)}
+.srow .s1{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--txt-2);margin-bottom:3px}
+.srow .s2{font-size:13.6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.empty{padding:48px 24px;text-align:center;color:var(--txt-2);font-size:13.5px;line-height:1.6}
+.sec{padding:14px 16px 6px;font-size:12.5px;color:var(--txt-2);font-weight:600}
+.opt{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.opt .ol{flex:1;min-width:0}
+.opt .o1{font-size:14px}
+.opt .o2{font-size:12px;color:var(--txt-2);margin-top:2px;line-height:1.4}
+.opt select,.opt input[type=date]{background:var(--panel-2);border:1px solid var(--line);border-radius:7px;
+  padding:7px 9px;font-size:13px;outline:none;max-width:150px}
+.sw{width:42px;height:24px;border-radius:12px;background:rgba(134,150,160,.4);flex:none;position:relative;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;
+  transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on{background:var(--accent)}
+.sw.on::after{transform:translateX(18px)}
+.stat{display:flex;justify-content:space-between;padding:9px 16px;font-size:13.5px;border-bottom:1px solid var(--line)}
+.stat b{font-weight:600}
+.chips{display:flex;gap:6px;padding:8px 12px;overflow-x:auto;border-bottom:1px solid var(--line)}
+.chip{padding:6px 12px;border-radius:14px;background:var(--panel-2);font-size:12.5px;white-space:nowrap;
+  border:1px solid var(--line);color:var(--txt-2)}
+.chip.act{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* lightbox */
+#lb{position:fixed;inset:0;z-index:70;background:#0b141aee;display:flex;flex-direction:column}
+#lb .lhdr{display:flex;align-items:center;gap:14px;padding:12px 16px;color:#e9edef;flex:none;
+  padding-top:calc(12px + env(safe-area-inset-top))}
+#lb .lhdr .lt{flex:1;min-width:0;font-size:14px}
+#lb .lhdr .lt small{display:block;color:#8696a0;font-size:12px;margin-top:2px}
+#lb .lbody{flex:1;display:grid;place-items:center;position:relative;min-height:0;padding:0 8px 8px}
+#lb img,#lb video{max-width:100%;max-height:100%;object-fit:contain;display:block}
+#lb .nav{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;
+  background:rgba(233,237,239,.12);color:#e9edef;display:grid;place-items:center}
+#lb .nav.p{left:10px}#lb .nav.n{right:10px}
+#lb .cap{color:#e9edef;font-size:13.5px;text-align:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  max-height:22vh;overflow:auto;white-space:pre-wrap}
+
+@media(max-width:820px){
+  .panel{position:fixed;inset:0;width:100%;z-index:50;border:0}
+  #scroller{padding:10px 3% 20px}
+  .msg{max-width:86%}
+  .fab{bottom:16px;right:12px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP ============ -->
+<div id="setup">
+  <div class="setup-card">
+    <h1>Chat Archive</h1>
+    <p class="lede">Open a WhatsApp chat export and read it back the way it looked in the app. Everything is decoded inside this browser tab — nothing is uploaded anywhere.</p>
+
+    <div class="drop" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+      <b>Drop the export .zip here</b>
+      <span>or pick it below — the folder works too</span>
+    </div>
+
+    <div class="setup-row">
+      <button class="btn" id="pickZip">Choose .zip file</button>
+      <button class="btn ghost" id="pickFolder">Choose unzipped folder</button>
+    </div>
+
+    <input type="file" id="fZip" accept=".zip,application/zip,application/x-zip-compressed,application/octet-stream" class="hide">
+    <input type="file" id="fFolder" webkitdirectory directory multiple class="hide">
+
+    <div class="progress hide" id="prog"><div class="bar"><i id="pbar"></i></div><div class="plabel" id="plabel">Reading…</div></div>
+    <div class="err hide" id="err"></div>
+
+    <div class="who hide" id="who">
+      <h3>Which one of these is you?</h3>
+      <div class="who-list" id="whoList"></div>
+    </div>
+
+    <div class="note" id="note">
+      <b>In WhatsApp:</b> open the chat → menu → Export chat → Attach media. That gives you a .zip with <code>_chat.txt</code> plus the photos, videos and voice notes.<br><br>
+      <b>Saved on this device:</b> tick "Remember this chat" in Settings after it opens, and this page will reload it by itself next time.
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hide">
+  <header class="top">
+    <div class="av" id="chatAv"></div>
+    <div class="meta"><div class="nm" id="chatName">Chat</div><div class="sub" id="chatSub"></div></div>
+    <button class="hbtn" id="btnSearch" title="Search (Ctrl+F)"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+    <button class="hbtn" id="btnMedia" title="Media, links and docs"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 5-5 4 4 3-2 4 4"/></svg></button>
+    <button class="hbtn" id="btnMenu" title="Settings"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg></button>
+  </header>
+
+  <div class="searchbar hide" id="searchbar">
+    <button class="hbtn" id="closeSearch"><svg class="ico" viewBox="0 0 24 24"><path d="M19 12H5m0 0 6-6m-6 6 6 6"/></svg></button>
+    <input id="q" type="search" placeholder="Search messages" autocomplete="off" spellcheck="false">
+    <span class="scount" id="scount"></span>
+    <button class="hbtn" id="sPrev" title="Newer"><svg class="ico" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button>
+    <button class="hbtn" id="sNext" title="Older"><svg class="ico" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+  </div>
+
+  <div class="wrap">
+    <div id="scroller">
+      <div class="floatdate" id="floatdate"></div>
+      <div id="rows"></div>
+      <button class="fab" id="fab"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14m0 0 6-6m-6 6-6-6"/></svg></button>
+    </div>
+
+    <aside class="panel hidden" id="panel">
+      <div class="phdr">
+        <button class="hbtn" id="closePanel"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        <div class="t" id="panelTitle">Media, links and docs</div>
+      </div>
+      <div class="tabs" id="tabs"></div>
+      <div class="pbody" id="pbody"></div>
+    </aside>
+  </div>
+</div>
+
+<div id="lb" class="hide">
+  <div class="lhdr">
+    <button class="hbtn" id="lbClose" style="color:#e9edef"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div class="lt"><span id="lbName"></span><small id="lbSub"></small></div>
+    <a class="hbtn" id="lbDl" download style="color:#e9edef" title="Save"><svg class="ico" viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4"/><path d="M4 20h16"/></svg></a>
+  </div>
+  <div class="lbody" id="lbBody">
+    <button class="nav p" id="lbPrev"><svg class="ico" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button class="nav n" id="lbNext"><svg class="ico" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+  </div>
+  <div class="cap" id="lbCap"></div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   Chat Archive — offline WhatsApp export viewer
+   Everything runs locally. No network calls, no uploads.
+   ========================================================================= */
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+
+/* subtle wallpaper doodle */
+document.documentElement.style.setProperty('--doodle', "url(\"data:image/svg+xml;utf8," + encodeURIComponent(
+`<svg xmlns='http://www.w3.org/2000/svg' width='206' height='206' viewBox='0 0 206 206'><g fill='none' stroke='%23000' stroke-opacity='.055' stroke-width='1.4' stroke-linecap='round'><circle cx='28' cy='30' r='9'/><path d='M24 30h8M28 26v8'/><path d='M96 22c6-7 16-3 16 5 0 7-9 12-16 18-7-6-16-11-16-18 0-8 10-12 16-5z'/><path d='M160 26h26v16h-9l-5 6-3-6h-9z'/><circle cx='52' cy='92' r='11'/><path d='M47 90a2 2 0 1 0 .01 0M57 90a2 2 0 1 0 .01 0M47 97c3 3 7 3 10 0'/><path d='M120 84h20v22h-20z'/><path d='M120 92h20M128 84v22'/><path d='M178 84l7 13-7 13-7-13z'/><path d='M30 150c8-6 18-6 26 0'/><path d='M30 158c8-6 18-6 26 0'/><circle cx='43' cy='168' r='2'/><path d='M100 146h24l6 8-6 8h-24z'/><path d='M170 145v22M162 152l8-7 8 7'/><path d='M78 178h16v10H86l-4 5-1-5h-3z'/></g></svg>`) + "\")");
+
+/* ---------------- tiny IndexedDB (for remembering the file + settings) ---- */
+const DB = (() => {
+  let p = null;
+  const open = () => p || (p = new Promise((res, rej) => {
+    const r = indexedDB.open('chat-archive', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+  const tx = async (mode, fn) => {
+    const db = await open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('kv', mode), s = t.objectStore('kv');
+      const q = fn(s);
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+  };
+  return {
+    get: k => tx('readonly', s => s.get(k)).catch(() => null),
+    set: (k, v) => tx('readwrite', s => s.put(v, k)).catch(() => null),
+    del: k => tx('readwrite', s => s.delete(k)).catch(() => null)
+  };
+})();
+
+/* ---------------- ZIP reader (uses the browser's native inflater) -------- */
+class ZipSource {
+  constructor(file) { this.file = file; this.map = new Map(); }
+  async _bytes(start, end) { return new Uint8Array(await this.file.slice(start, end).arrayBuffer()); }
+  async open() {
+    const size = this.file.size;
+    const tailLen = Math.min(size, 66000);
+    const tail = await this._bytes(size - tailLen, size);
+    const dv = new DataView(tail.buffer);
+    let eocd = -1;
+    for (let i = tail.length - 22; i >= 0; i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error('That file is not a readable .zip archive.');
+    let count = dv.getUint16(eocd + 10, true);
+    let cdSize = dv.getUint32(eocd + 12, true);
+    let cdOff = dv.getUint32(eocd + 16, true);
+    if (cdOff === 0xffffffff || count === 0xffff) {          // ZIP64
+      for (let i = eocd - 20; i >= 0; i--) {
+        if (dv.getUint32(i, true) === 0x07064b50) {
+          const z64 = Number(dv.getBigUint64(i + 8, true));
+          const h = await this._bytes(z64, z64 + 56), hv = new DataView(h.buffer);
+          count = Number(hv.getBigUint64(32, true));
+          cdSize = Number(hv.getBigUint64(40, true));
+          cdOff = Number(hv.getBigUint64(48, true));
+          break;
+        }
+      }
+    }
+    const cd = await this._bytes(cdOff, cdOff + cdSize);
+    const cv = new DataView(cd.buffer);
+    const dec = new TextDecoder('utf-8');
+    let p = 0;
+    for (let n = 0; n < count && p + 46 <= cd.length; n++) {
+      if (cv.getUint32(p, true) !== 0x02014b50) break;
+      const method = cv.getUint16(p + 10, true);
+      const fnLen = cv.getUint16(p + 28, true);
+      const exLen = cv.getUint16(p + 30, true);
+      const cmLen = cv.getUint16(p + 32, true);
+      let comp = cv.getUint32(p + 20, true);
+      let uncomp = cv.getUint32(p + 24, true);
+      let off = cv.getUint32(p + 42, true);
+      const name = dec.decode(cd.subarray(p + 46, p + 46 + fnLen));
+      if (comp === 0xffffffff || uncomp === 0xffffffff || off === 0xffffffff) { // ZIP64 extra
+        let q = p + 46 + fnLen, end = q + exLen;
+        while (q + 4 <= end) {
+          const id = cv.getUint16(q, true), sz = cv.getUint16(q + 2, true);
+          if (id === 1) {
+            let r = q + 4;
+            if (uncomp === 0xffffffff) { uncomp = Number(cv.getBigUint64(r, true)); r += 8; }
+            if (comp === 0xffffffff) { comp = Number(cv.getBigUint64(r, true)); r += 8; }
+            if (off === 0xffffffff) { off = Number(cv.getBigUint64(r, true)); r += 8; }
+            break;
+          }
+          q += 4 + sz;
+        }
+      }
+      p += 46 + fnLen + exLen + cmLen;
+      if (name.endsWith('/') || name.startsWith('__MACOSX/') || name.split('/').pop().startsWith('._')) continue;
+      this.map.set(name, { name, method, comp, uncomp, off });
+    }
+    return this;
+  }
+  list() { return [...this.map.values()].map(e => ({ name: e.name, size: e.uncomp })); }
+  memCost(name) { const e = this.map.get(name); return e ? (e.method === 0 ? 0 : e.uncomp) : 0; }
+  async blob(name, mime) {
+    const e = this.map.get(name);
+    if (!e) return null;
+    const h = await this._bytes(e.off, e.off + 30);
+    const hv = new DataView(h.buffer);
+    const start = e.off + 30 + hv.getUint16(26, true) + hv.getUint16(28, true);
+    const raw = this.file.slice(start, start + e.comp);
+    if (e.method === 0) return new Blob([raw], { type: mime || '' });
+    if (e.method !== 8) throw new Error('Unsupported compression in ' + e.name);
+    const ds = new DecompressionStream('deflate-raw');
+    const out = await new Response(raw.stream().pipeThrough(ds)).arrayBuffer();
+    return new Blob([out], { type: mime || '' });
+  }
+}
+
+/* ---------------- plain folder / multi-file source ---------------------- */
+class FolderSource {
+  constructor(files) {
+    this.map = new Map();
+    for (const f of files) {
+      const n = (f.webkitRelativePath || f.name);
+      if (n.includes('__MACOSX') || n.split('/').pop().startsWith('._')) continue;
+      this.map.set(n, f);
+    }
+  }
+  async open() { return this; }
+  list() { return [...this.map.entries()].map(([name, f]) => ({ name, size: f.size })); }
+  memCost() { return 0; }
+  async blob(name, mime) {
+    const f = this.map.get(name);
+    if (!f) return null;
+    return mime ? f.slice(0, f.size, mime) : f;
+  }
+}
+
+/* ---------------- file kinds -------------------------------------------- */
+const MIME = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+  heic: 'image/heic', heif: 'image/heif', bmp: 'image/bmp', avif: 'image/avif',
+  mp4: 'video/mp4', mov: 'video/quicktime', '3gp': 'video/3gpp', mkv: 'video/x-matroska', avi: 'video/x-msvideo', webm: 'video/webm',
+  opus: 'audio/ogg', ogg: 'audio/ogg', oga: 'audio/ogg', mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', amr: 'audio/amr',
+  pdf: 'application/pdf', txt: 'text/plain', vcf: 'text/vcard', csv: 'text/csv',
+  doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  zip: 'application/zip', apk: 'application/vnd.android.package-archive'
+};
+const extOf = n => (n.split('.').pop() || '').toLowerCase();
+function kindOf(name) {
+  const e = extOf(name);
+  if (['jpg', 'jpeg', 'png', 'gif', 'heic', 'heif', 'bmp', 'avif'].includes(e)) return 'image';
+  if (e === 'webp') return /sticker|stk/i.test(name) ? 'sticker' : 'image';
+  if (['mp4', 'mov', '3gp', 'mkv', 'avi', 'webm'].includes(e)) return 'video';
+  if (['opus', 'ogg', 'oga', 'mp3', 'm4a', 'aac', 'wav', 'amr'].includes(e)) return 'audio';
+  if (e === 'vcf') return 'contact';
+  return 'doc';
+}
+const isVoice = n => /ptt|audio-\d|voice|opus$/i.test(n) || extOf(n) === 'opus';
+const fmtSize = b => b == null ? '' : b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(0) + ' kB' : (b / 1048576).toFixed(1) + ' MB';
+const fmtDur = s => (!isFinite(s) || s < 0) ? '0:00' : Math.floor(s / 60) + ':' + pad(Math.floor(s % 60));
+
+/* ---------------- parser ------------------------------------------------ */
+const RE_IOS = /^\[(\d{1,4}[.\/-]\d{1,2}[.\/-]\d{1,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*([APap]\.?\s?[Mm]\.?)?\]\s*([\s\S]*)$/;
+const RE_AND = /^(\d{1,4}[.\/-]\d{1,2}[.\/-]\d{1,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*([APap]\.?\s?[Mm]\.?)?\s*[-–—]\s*([\s\S]*)$/;
+const SYS_WORDS = /(created group|created this group|added|removed|left|joined|changed the subject|changed this group|changed their phone number|changed to|security code|end-to-end encrypted|deleted this message|missed voice call|missed video call|turned on|turned off|now an admin|pinned a message|started a call|blocked|unblocked|You're now using|messages and calls are)/i;
+const RE_OMITTED = /^\s*(image|photo|video|audio|voice message|sticker|document|GIF|Contact card|contact card)\s+omitted\s*$/i;
+const RE_MEDIA_OMITTED = /^\s*<Media omitted>\s*$/i;
+const RE_ATTACH_ANGLE = /<attached:\s*([^>]+)>/i;
+const RE_ATTACH_PAREN = /^\s*([^\n]+?\.[A-Za-z0-9]{2,5})\s*\((?:file attached|archivo adjunto|arquivo anexado|fichier joint|Datei angehängt)\)\s*/i;
+const RE_URL = /\b((?:https?:\/\/|www\.)[^\s<>"']+[^\s<>"'.,;:!?)\]}])/gi;
+
+function normalizeText(t) {
+  return t.replace(/^\ufeff/, '').replace(/\r\n?/g, '\n')
+    .replace(/[\u200e\u200f\u202a-\u202e]/g, '').replace(/[\u00a0\u202f]/g, ' ');
+}
+
+function parseChat(text, mediaIndex, forceDmy) {
+  const lines = normalizeText(text).split('\n');
+  const raw = [];
+  for (const line of lines) {
+    let m = RE_IOS.exec(line) || RE_AND.exec(line);
+    if (m) raw.push({ d: m[1], t: m[2], ap: m[3] || '', body: m[4] });
+    else if (raw.length) raw[raw.length - 1].body += '\n' + line;
+  }
+  if (!raw.length) throw new Error('No messages found in the text file. It may not be a WhatsApp export.');
+
+  // day/month order
+  let dmy = true, decided = false;
+  if (typeof forceDmy === 'boolean') { dmy = forceDmy; decided = true; }
+  for (const r of raw) {
+    if (decided) break;
+    const p = r.d.split(/[.\/-]/).map(Number);
+    if (p[0] > 31) continue;
+    if (p[0] > 12) { dmy = true; decided = true; break; }
+    if (p[1] > 12) { dmy = false; decided = true; break; }
+  }
+  const msgs = [];
+  const senderCount = new Map();
+  for (const r of raw) {
+    const cut = r.body.indexOf(':');
+    if (cut > 0 && cut < 80 && !r.body.slice(0, cut).includes('\n')) {
+      const cand = r.body.slice(0, cut).trim();
+      if (cand && !SYS_WORDS.test(cand)) senderCount.set(cand, (senderCount.get(cand) || 0) + 1);
+    }
+  }
+  for (const r of raw) {
+    const when = mkDate(r.d, r.t, r.ap, dmy);
+    let sender = null, body = r.body;
+    const cut = body.indexOf(':');
+    if (cut > 0 && cut < 80 && !body.slice(0, cut).includes('\n')) {
+      const cand = body.slice(0, cut).trim();
+      if (senderCount.has(cand) && (senderCount.get(cand) > 1 || !SYS_WORDS.test(cand))) {
+        sender = cand; body = body.slice(cut + 1).replace(/^ /, '');
+      }
+    }
+    const msg = { when, sender, text: body.trim(), sys: !sender, kind: null, file: null, edited: false, deleted: false };
+    if (/<This message was edited>\s*$/.test(msg.text)) { msg.edited = true; msg.text = msg.text.replace(/<This message was edited>\s*$/, '').trim(); }
+    if (/^(This message was deleted|You deleted this message|You deleted this message\.)\.?$/i.test(msg.text)) { msg.deleted = true; msg.text = ''; }
+    if (!msg.sys) attach(msg, mediaIndex);
+    msgs.push(msg);
+  }
+  return { msgs, dmy, decided, senders: [...senderCount.entries()].sort((a, b) => b[1] - a[1]) };
+}
+
+function mkDate(ds, ts, ap, dmy) {
+  const p = ds.split(/[.\/-]/).map(Number);
+  let d, m, y;
+  if (p[0] > 31) { y = p[0]; m = p[1]; d = p[2]; }
+  else if (dmy) { d = p[0]; m = p[1]; y = p[2]; }
+  else { m = p[0]; d = p[1]; y = p[2]; }
+  if (y < 100) y += y < 70 ? 2000 : 1900;
+  const tp = ts.split(':').map(Number);
+  let H = tp[0];
+  if (ap) { const pm = /p/i.test(ap); if (pm && H < 12) H += 12; if (!pm && H === 12) H = 0; }
+  const dt = new Date(y, (m || 1) - 1, d || 1, H || 0, tp[1] || 0, tp[2] || 0);
+  return isNaN(dt) ? new Date(0) : dt;
+}
+
+function attach(msg, index) {
+  let t = msg.text, m;
+  if ((m = RE_ATTACH_ANGLE.exec(t))) { setFile(msg, m[1].trim(), index); msg.text = t.replace(m[0], '').trim(); return; }
+  if ((m = RE_ATTACH_PAREN.exec(t))) { setFile(msg, m[1].trim(), index); msg.text = t.slice(m[0].length).trim(); return; }
+  if ((m = RE_OMITTED.exec(t))) {
+    const w = m[1].toLowerCase();
+    msg.kind = w === 'photo' ? 'image' : w === 'voice message' ? 'audio' : w === 'gif' ? 'video' : w === 'contact card' ? 'contact' : w;
+    msg.missing = true; msg.text = ''; return;
+  }
+  if (RE_MEDIA_OMITTED.test(t)) { msg.kind = 'image'; msg.missing = true; msg.text = ''; return; }
+  const single = t.split('\n')[0].trim();
+  if (/^[^\s].{0,120}\.[A-Za-z0-9]{2,5}$/.test(single) && index.byBase.has(single.toLowerCase())) {
+    setFile(msg, single, index);
+    msg.text = t.split('\n').slice(1).join('\n').trim();
+  }
+}
+function setFile(msg, name, index) {
+  const base = name.split('/').pop();
+  const hit = index.byBase.get(base.toLowerCase());
+  msg.kind = kindOf(base);
+  if (msg.kind === 'audio' && isVoice(base)) msg.kind = 'voice';
+  if (hit) { msg.file = hit; msg.size = hit.size; }
+  else { msg.missing = true; msg.fileName = base; }
+}
+
+/* ---------------- state ------------------------------------------------- */
+const S = {
+  src: null, msgs: [], rows: [], rowOfMsg: new Map(), index: { byBase: new Map(), files: [] },
+  senders: [], me: null, chatName: 'Chat', showNames: false, dmy: true,
+  win: { s: 0, e: 0 }, urls: new Map(), lower: [], remember: false,
+  profile: { name: null, photo: null, people: {} },
+  set: { theme: 'light', wall: 'on', clock: 'auto', ticks: true, fs: 14.8, order: 'dmy' }
+};
+const CHUNK = 70, MAXWIN = 900;
+
+/* colour for avatars, WhatsApp-ish palette */
+const AV_COLORS = ['#e542a3', '#5e6ee6', '#e0803c', '#0aa89e', '#7d5fff', '#c2415a', '#3f9b4a', '#d4a017', '#4a90d9', '#8e6bbf'];
+const avColor = n => AV_COLORS[[...(n || '?')].reduce((a, c) => a + c.charCodeAt(0), 0) % AV_COLORS.length];
+function paintAv(node, name, photo) {
+  node.textContent = photo ? '' : initials(name);
+  node.style.background = photo ? 'center/cover url("' + photo + '")' : avColor(name);
+}
+function pickImage() {
+  return new Promise(res => {
+    const i = el('input');
+    i.type = 'file'; i.accept = 'image/*';
+    i.onchange = async () => {
+      const f = i.files && i.files[0];
+      if (!f) return res(null);
+      try { res(await squareThumb(f)); }
+      catch (e) { alert('That image could not be read. A JPG or PNG works best.'); res(null); }
+    };
+    i.click();
+  });
+}
+async function squareThumb(file, size = 256) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => {
+      const im = new Image();
+      im.onload = () => ok(im); im.onerror = () => no(new Error('decode'));
+      im.src = url;
+    });
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    c.getContext('2d').drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+    return c.toDataURL('image/jpeg', 0.86);
+  } finally { URL.revokeObjectURL(url); }
+}
+const initials = n => (n || '?').replace(/[^\p{L}\p{N} ]/gu, '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '#';
+
+/* ---------------- media URLs (lazy, capped) ----------------------------- */
+const MEM_BUDGET = (navigator.deviceMemory && navigator.deviceMemory <= 4 ? 140 : 400) * 1048576;
+async function urlFor(f) {
+  if (!f) return null;
+  const hit = S.urls.get(f.name);
+  if (hit) { hit.t = performance.now(); return hit.url; }
+  const b = await S.src.blob(f.name, MIME[extOf(f.name)] || '');
+  if (!b) return null;
+  const mem = S.src.memCost ? S.src.memCost(f.name) : (f.size || 0);
+  const u = URL.createObjectURL(b);
+  S.urls.set(f.name, { url: u, mem, t: performance.now() });
+  S.mem = (S.mem || 0) + mem;
+  if (S.mem > MEM_BUDGET || S.urls.size > 400) evictMedia(f.name);
+  return u;
+}
+function evictMedia(keep) {
+  const live = new Set($$('#rows [data-mn], #lb [data-mn]').map(n => n.dataset.mn));
+  const order = [...S.urls.entries()].sort((a, b) => a[1].t - b[1].t);
+  for (const [k, v] of order) {
+    if (S.mem <= MEM_BUDGET * 0.6 && S.urls.size <= 300) break;
+    if (k === keep || live.has(k)) continue;
+    URL.revokeObjectURL(v.url);
+    S.urls.delete(k);
+    S.mem -= v.mem;
+  }
+}
+
+/* ---------------- text formatting --------------------------------------- */
+const M1 = '\u0001', M2 = '\u0002';
+function mdInline(h) {
+  h = h.replace(/```([\s\S]+?)```/g, (_, c) => '<span class="mono">' + c + '</span>');
+  h = h.replace(/(^|[\s(>])\*(\S(?:[^*\n]*\S)?)\*(?=[\s).,!?:;]|$)/g, '$1<b>$2</b>');
+  h = h.replace(/(^|[\s(>])_(\S(?:[^_\n]*\S)?)_(?=[\s).,!?:;]|$)/g, '$1<i>$2</i>');
+  h = h.replace(/(^|[\s(>])~(\S(?:[^~\n]*\S)?)~(?=[\s).,!?:;]|$)/g, '$1<s>$2</s>');
+  h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  return h;
+}
+function fmtBody(text, q) {
+  if (!text) return '';
+  let src = text;
+  if (q) {
+    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    src = src.replace(re, m => M1 + m + M2);
+  }
+  const out = [];
+  let last = 0, m;
+  RE_URL.lastIndex = 0;
+  while ((m = RE_URL.exec(src))) {
+    out.push(mdInline(esc(src.slice(last, m.index))));
+    const raw = m[0].replace(new RegExp(M1 + '|' + M2, 'g'), '');
+    out.push('<a href="' + esc(raw.startsWith('http') ? raw : 'https://' + raw) + '" target="_blank" rel="noopener noreferrer">' + esc(m[0]) + '</a>');
+    last = m.index + m[0].length;
+  }
+  out.push(mdInline(esc(src.slice(last))));
+  return out.join('').split(M1).join('<mark>').split(M2).join('</mark>');
+}
+const EMOJI_ONLY = /^[\p{Extended_Pictographic}\p{Emoji_Component}\s\u200d\ufe0f]+$/u;
+
+function timeStr(d) {
+  const h24 = S.set.clock === '24' || (S.set.clock === 'auto' && !/AM|PM/i.test(new Date().toLocaleTimeString()));
+  return h24 ? pad(d.getHours()) + ':' + pad(d.getMinutes())
+    : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+const dayKey = d => d.getFullYear() * 10000 + d.getMonth() * 100 + d.getDate();
+const localISO = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+function dayLabel(d) {
+  const t = new Date(), y = new Date(Date.now() - 864e5);
+  if (dayKey(d) === dayKey(t)) return 'Today';
+  if (dayKey(d) === dayKey(y)) return 'Yesterday';
+  const opts = d.getFullYear() === t.getFullYear()
+    ? { weekday: 'short', day: 'numeric', month: 'long' }
+    : { day: 'numeric', month: 'long', year: 'numeric' };
+  return d.toLocaleDateString([], opts);
+}
+
+/* ---------------- rows -------------------------------------------------- */
+function buildRows() {
+  S.rows = []; S.rowOfMsg = new Map();
+  let lastDay = -1, lastSender = null, lastT = 0;
+  S.msgs.forEach((m, i) => {
+    const k = dayKey(m.when);
+    if (k !== lastDay) { S.rows.push({ t: 'date', d: m.when }); lastDay = k; lastSender = null; }
+    if (m.sys) { S.rows.push({ t: 'sys', i }); lastSender = null; return; }
+    const grp = m.sender !== lastSender || (m.when - lastT) > 9e5;
+    S.rows.push({ t: 'msg', i, grp });
+    lastSender = m.sender; lastT = m.when;
+  });
+  S.rows.forEach((r, ri) => { if (r.t !== 'date') S.rowOfMsg.set(r.i, ri); });
+  S.lower = S.msgs.map(m => (m.text || '').toLowerCase());
+}
+
+/* ---------------- node builders ----------------------------------------- */
+const mediaIO = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) { mediaIO.unobserve(e.target); hydrate(e.target); }
+}, { rootMargin: '600px 0px' });
+
+function rowNode(r, q) {
+  if (r.t === 'date') {
+    const d = el('div', 'datepill', dayLabel(r.d));
+    d.dataset.day = dayKey(r.d);
+    return d;
+  }
+  const m = S.msgs[r.i];
+  if (r.t === 'sys') {
+    const s = el('div', 'syspill');
+    s.innerHTML = fmtBody(m.text, q);
+    s.dataset.mi = r.i;
+    return s;
+  }
+  const out = m.sender === S.me;
+  const wrap = el('div', 'msg ' + (out ? 'out' : 'in') + (r.grp ? ' grp' : ''));
+  wrap.dataset.mi = r.i;
+  const b = el('div', 'bubble');
+  if (r.grp && S.showNames && !out) {
+    const s = el('div', 'sender', m.sender);
+    s.style.color = avColor(m.sender);
+    b.append(s);
+  }
+  if (m.deleted) {
+    const d = el('div', 'deleted');
+    d.innerHTML = '<svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m6 18 12-12"/></svg><span>This message was deleted</span>';
+    b.append(d);
+  } else if (m.kind) {
+    b.append(mediaNode(m));
+  }
+  const hasText = !!(m.text && !m.deleted);
+  let body = null;
+  if (hasText) {
+    body = el('div', 'body' + (m.kind ? ' caption' : '') + (EMOJI_ONLY.test(m.text) && m.text.length < 12 ? ' big' : ''));
+    body.innerHTML = fmtBody(m.text, q);
+    b.append(body);
+  } else if (!m.kind && !m.deleted) {
+    body = el('div', 'body', '');
+    b.append(body);
+  }
+  const st = el('span', 'stamp');
+  if (m.edited) st.append(el('span', 'edited', 'Edited'));
+  st.append(el('span', null, timeStr(m.when)));
+  if (out && S.set.ticks) {
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    t.setAttribute('viewBox', '0 0 18 12'); t.setAttribute('class', 'tick');
+    t.innerHTML = '<path d="M6.6 10.4 1.9 5.7l1.1-1.1 3.6 3.6L14.9.9 16 2 6.6 10.4z"/><path d="M11.4 10.4 6.7 5.7l1.1-1.1 3.6 3.6L19.7.9l1.1 1.1-9.4 8.4z" transform="translate(-4)"/>';
+    st.append(t);
+  }
+  const visual = !m.missing && m.file && ['image', 'video', 'sticker'].includes(m.kind);
+  if (body) body.append(st);
+  else if (visual) { b.classList.add('mediaonly'); b.append(st); }
+  else { const sr = el('div', 'stamprow'); sr.append(st); b.append(sr); }
+  wrap.append(b);
+  return wrap;
+}
+
+function mediaNode(m) {
+  if (m.missing || !m.file) {
+    const d = el('div', 'missing');
+    d.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5m0 3v.01"/></svg>' +
+      '<span>' + ({ image: 'Photo', video: 'Video', voice: 'Voice message', audio: 'Audio', sticker: 'Sticker', doc: 'Document', contact: 'Contact card' }[m.kind] || 'Attachment') +
+      ' not included in this export' + (m.fileName ? '<br><small>' + esc(m.fileName) + '</small>' : '') + '</span>';
+    return d;
+  }
+  const f = m.file;
+  if (m.kind === 'image' || m.kind === 'sticker') {
+    const w = el('div', 'mwrap' + (m.kind === 'sticker' ? ' sticker' : ' ph'));
+    w.dataset.mn = f.name; w.dataset.type = 'image';
+    const img = el('img'); img.alt = ''; img.decoding = 'async';
+    w.append(img);
+    w.onclick = () => openLightbox(f.name);
+    mediaIO.observe(w);
+    return w;
+  }
+  if (m.kind === 'video') {
+    const w = el('div', 'mwrap ph');
+    w.dataset.mn = f.name; w.dataset.type = 'video';
+    const v = el('video'); v.preload = 'metadata'; v.playsInline = true; v.muted = true;
+    w.append(v);
+    const ov = el('div', 'play-o');
+    ov.innerHTML = '<i><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></i>';
+    w.append(ov);
+    const meta = el('div', 'mmeta');
+    meta.innerHTML = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:currentColor"><path d="M4 6h11v12H4zM16 9l4-3v12l-4-3z"/></svg><span>' + fmtSize(m.size) + '</span>';
+    w.append(meta);
+    w.onclick = () => openLightbox(f.name);
+    mediaIO.observe(w);
+    return w;
+  }
+  if (m.kind === 'voice' || m.kind === 'audio') return voiceNode(m);
+  return docNode(m);
+}
+
+function voiceNode(m) {
+  const f = m.file;
+  const box = el('div', 'voice');
+  box.dataset.mn = f.name;
+  const btn = el('button', 'vplay');
+  btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  const mid = el('div', 'vmid');
+  const wave = el('div', 'wave');
+  let h = 0; for (const c of f.name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const bars = 34;
+  for (let i = 0; i < bars; i++) {
+    h = (h * 1103515245 + 12345) >>> 0;
+    const b = el('i');
+    b.style.height = (18 + (h % 68)) + '%';
+    wave.append(b);
+  }
+  const row = el('div', 'vrow');
+  const mic = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  mic.setAttribute('viewBox', '0 0 24 24'); mic.setAttribute('class', 'mic');
+  mic.innerHTML = '<path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z"/><path d="M18 11a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.9V22h2v-3.1A8 8 0 0 0 20 11h-2z"/></svg>';
+  const tm = el('span', null, '0:00');
+  const sp = el('button', 'speed', '1x');
+  row.append(mic, tm, sp);
+  mid.append(wave, row);
+  const av = el('div', 'vav');
+  paintAv(av, m.sender, S.profile.people[m.sender]);
+  box.append(btn, mid, av);
+
+  let audio = null, rate = 1;
+  const paint = () => {
+    const p = audio && audio.duration ? audio.currentTime / audio.duration : 0;
+    [...wave.children].forEach((b, i) => b.classList.toggle('on', i / bars <= p));
+    tm.textContent = audio ? fmtDur(audio.paused ? (audio.currentTime || audio.duration || 0) : audio.currentTime) : '0:00';
+  };
+  const ensure = async () => {
+    if (audio) return audio;
+    const u = await urlFor(f);
+    audio = new Audio(u);
+    audio.preload = 'metadata';
+    audio.playbackRate = rate;
+    audio.addEventListener('loadedmetadata', paint);
+    audio.addEventListener('timeupdate', paint);
+    audio.addEventListener('ended', () => {
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+      mic.classList.add('played');
+      const all = $$('#rows .voice'), i = all.indexOf(box);
+      if (i > -1 && all[i + 1]) all[i + 1].querySelector('.vplay').click();
+    });
+    audio.addEventListener('error', () => {
+      box.replaceWith(docNode(m, 'This browser cannot play ' + extOf(f.name) + ' — tap to save'));
+    });
+    return audio;
+  };
+  btn.onclick = async () => {
+    const a = await ensure();
+    if (a.paused) {
+      $$('#rows .voice audio').forEach(x => x.pause());
+      window.__wa_audios && window.__wa_audios.forEach(x => { if (x !== a) x.pause(); });
+      (window.__wa_audios = window.__wa_audios || new Set()).add(a);
+      a.play();
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+    } else {
+      a.pause();
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+    }
+  };
+  wave.onclick = async e => {
+    const a = await ensure();
+    const r = wave.getBoundingClientRect();
+    if (a.duration) { a.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * a.duration; paint(); }
+  };
+  sp.onclick = async () => {
+    rate = rate === 1 ? 1.5 : rate === 1.5 ? 2 : 1;
+    sp.textContent = rate + 'x';
+    sp.classList.toggle('act', rate !== 1);
+    if (audio) audio.playbackRate = rate;
+  };
+  box.dataset.type = 'audio';
+  box._setDur = d => { if (!audio) tm.textContent = fmtDur(d); };
+  mediaIO.observe(box);
+  return box;
+}
+
+const DOC_COLORS = { pdf: '#d93025', doc: '#2b579a', docx: '#2b579a', xls: '#1d6f42', xlsx: '#1d6f42', ppt: '#d24726', pptx: '#d24726', zip: '#7a869a', apk: '#3ddc84', txt: '#546e7a', vcf: '#00a884' };
+function docNode(m, override) {
+  const f = m.file;
+  const name = f ? f.name.split('/').pop() : (m.fileName || 'file');
+  const e = extOf(name);
+  const d = el('div', 'doc');
+  if (f) d.dataset.mn = f.name;
+  const fi = el('div', 'fi', e.slice(0, 4).toUpperCase());
+  fi.style.background = DOC_COLORS[e] || '#5f6b74';
+  const dn = el('div', 'dn');
+  dn.append(el('div', 'dt', name));
+  dn.append(el('div', 'ds', override || [e.toUpperCase(), fmtSize(m.size)].filter(Boolean).join(' · ')));
+  const dl = el('div', 'dl');
+  dl.innerHTML = '<svg class="ico" viewBox="0 0 24 24" style="width:19px;height:19px"><path d="M12 4v11m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>';
+  d.append(fi, dn, dl);
+  d.onclick = async () => {
+    if (!f) return;
+    const u = await urlFor(f);
+    const a = document.createElement('a');
+    a.href = u; a.download = name; a.target = '_blank'; a.rel = 'noopener';
+    document.body.append(a); a.click(); a.remove();
+  };
+  return d;
+}
+
+async function hydrate(node) {
+  const f = S.index.byName.get(node.dataset.mn);
+  const u = await urlFor(f);
+  if (!u) return;
+  const t = node.dataset.type;
+  if (t === 'image') {
+    const img = node.querySelector('img');
+    img.onerror = () => { node.classList.remove('ph'); node.innerHTML = '<div class="missing"><span>Could not display ' + esc(f.name.split('/').pop()) + '</span></div>'; };
+    img.onload = () => node.classList.remove('ph');
+    img.src = u;
+  } else if (t === 'audio') {
+    const a = new Audio(u);
+    a.preload = 'metadata';
+    a.addEventListener('loadedmetadata', () => node._setDur && node._setDur(a.duration));
+  } else if (t === 'video') {
+    const v = node.querySelector('video');
+    v.src = u;
+    v.addEventListener('loadedmetadata', () => {
+      node.classList.remove('ph');
+      const q = node.querySelector('.mmeta span');
+      if (q) q.textContent = fmtDur(v.duration);
+    }, { once: true });
+    v.addEventListener('error', () => node.classList.remove('ph'), { once: true });
+  }
+}
+
+/* ---------------- windowed renderer ------------------------------------- */
+const scroller = $('#scroller'), rowsEl = $('#rows');
+let curQ = '';
+
+function frag(a, b) {
+  const f = document.createDocumentFragment();
+  for (let i = a; i < b; i++) f.append(rowNode(S.rows[i], curQ));
+  return f;
+}
+function renderWindow(s, e) {
+  s = Math.max(0, s); e = Math.min(S.rows.length, e);
+  S.win = { s, e };
+  rowsEl.replaceChildren(frag(s, e));
+}
+function extendUp() {
+  if (S.win.s === 0) return;
+  const s = Math.max(0, S.win.s - CHUNK);
+  const h0 = scroller.scrollHeight, t0 = scroller.scrollTop;
+  rowsEl.prepend(frag(s, S.win.s));
+  S.win.s = s;
+  scroller.scrollTop = t0 + (scroller.scrollHeight - h0);
+  if (S.win.e - S.win.s > MAXWIN) {
+    const drop = S.win.e - S.win.s - MAXWIN;
+    for (let i = 0; i < drop; i++) rowsEl.lastElementChild && rowsEl.lastElementChild.remove();
+    S.win.e -= drop;
+  }
+}
+function extendDown() {
+  if (S.win.e >= S.rows.length) return;
+  const e = Math.min(S.rows.length, S.win.e + CHUNK);
+  rowsEl.append(frag(S.win.e, e));
+  S.win.e = e;
+  if (S.win.e - S.win.s > MAXWIN) {
+    const drop = S.win.e - S.win.s - MAXWIN;
+    const h0 = scroller.scrollHeight, t0 = scroller.scrollTop;
+    for (let i = 0; i < drop; i++) rowsEl.firstElementChild && rowsEl.firstElementChild.remove();
+    S.win.s += drop;
+    scroller.scrollTop = t0 - (h0 - scroller.scrollHeight);
+  }
+}
+function toBottom() {
+  renderWindow(Math.max(0, S.rows.length - CHUNK * 3), S.rows.length);
+  requestAnimationFrame(() => { scroller.scrollTop = scroller.scrollHeight; });
+}
+function jumpToRow(ri, flashMsg) {
+  ri = Math.max(0, Math.min(S.rows.length - 1, ri));
+  const inWin = ri >= S.win.s && ri < S.win.e;
+  if (!inWin) renderWindow(ri - CHUNK, ri + CHUNK * 2);
+  const r = S.rows[ri];
+  const sel = r.t === 'date' ? '[data-day="' + dayKey(r.d) + '"]' : '[data-mi="' + r.i + '"]';
+  const node = rowsEl.querySelector(sel);
+  if (!node) return;
+  node.scrollIntoView({ block: 'center' });
+  if (flashMsg !== false) { node.classList.add('flash'); setTimeout(() => node.classList.remove('flash'), 1700); }
+}
+function jumpToMsg(i) { const ri = S.rowOfMsg.get(i); if (ri != null) jumpToRow(ri); }
+
+let ticking = false;
+scroller.addEventListener('scroll', () => {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    ticking = false;
+    const st = scroller.scrollTop, ch = scroller.clientHeight, sh = scroller.scrollHeight;
+    if (st < 800) extendUp();
+    if (st + ch > sh - 800) extendDown();
+    $('#fab').classList.toggle('show', sh - st - ch > 700 || S.win.e < S.rows.length);
+    showFloatDate();
+  });
+}, { passive: true });
+
+let fdT = null;
+function showFloatDate() {
+  const fd = $('#floatdate');
+  const top = scroller.getBoundingClientRect().top + 60;
+  for (const n of rowsEl.children) {
+    const r = n.getBoundingClientRect();
+    if (r.bottom > top) {
+      const mi = n.dataset.mi;
+      const d = n.dataset.day ? null : (mi != null ? S.msgs[+mi].when : null);
+      fd.textContent = n.dataset.day ? n.textContent : (d ? dayLabel(d) : '');
+      break;
+    }
+  }
+  fd.classList.add('show');
+  clearTimeout(fdT);
+  fdT = setTimeout(() => fd.classList.remove('show'), 1300);
+}
+$('#fab').onclick = () => { if (S.win.e < S.rows.length) toBottom(); else scroller.scrollTop = scroller.scrollHeight; };
+
+/* ---------------- search ------------------------------------------------ */
+let hits = [], hpos = -1, sT = null;
+function runSearch(q) {
+  curQ = q.trim();
+  hits = []; hpos = -1;
+  if (curQ.length) {
+    const lq = curQ.toLowerCase();
+    for (let i = 0; i < S.lower.length; i++) {
+      const m = S.msgs[i];
+      if (S.lower[i].includes(lq) || (m.file && m.file.name.toLowerCase().includes(lq)) || (m.sender && m.sender.toLowerCase().includes(lq))) hits.push(i);
+    }
+  }
+  $('#scount').textContent = curQ ? (hits.length ? hits.length + ' found' : 'No matches') : '';
+  redraw();
+  if (hits.length) { hpos = hits.length - 1; gotoHit(0); }
+  if (panelTab === 'search') renderPanel();
+}
+function gotoHit(delta) {
+  if (!hits.length) return;
+  hpos = (hpos + delta + hits.length) % hits.length;
+  $('#scount').textContent = (hpos + 1) + ' of ' + hits.length;
+  jumpToMsg(hits[hpos]);
+}
+$('#q').addEventListener('input', e => { clearTimeout(sT); sT = setTimeout(() => runSearch(e.target.value), 200); });
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); gotoHit(e.shiftKey ? -1 : 1); } });
+$('#sNext').onclick = () => gotoHit(1);
+$('#sPrev').onclick = () => gotoHit(-1);
+$('#btnSearch').onclick = () => openSearch();
+$('#closeSearch').onclick = () => { $('#searchbar').classList.add('hide'); $('#q').value = ''; runSearch(''); };
+function openSearch() { $('#searchbar').classList.remove('hide'); $('#q').focus(); $('#q').select(); }
+
+/* ---------------- side panel -------------------------------------------- */
+let panelTab = 'media', shown = 0;
+const TABS = [['media', 'Media'], ['docs', 'Docs'], ['links', 'Links'], ['search', 'Search'], ['info', 'Info']];
+function openPanel(tab) {
+  panelTab = tab || panelTab;
+  $('#panel').classList.remove('hidden');
+  $('#tabs').replaceChildren(...TABS.map(([k, t]) => {
+    const b = el('button', k === panelTab ? 'act' : '', t);
+    b.onclick = () => { panelTab = k; shown = 0; openPanel(k); };
+    return b;
+  }));
+  renderPanel();
+}
+$('#btnMedia').onclick = () => openPanel('media');
+$('#closePanel').onclick = () => $('#panel').classList.add('hidden');
+
+function mediaList() { return S.msgs.map((m, i) => ({ m, i })).filter(x => x.m.file && ['image', 'video', 'sticker'].includes(x.m.kind)); }
+function docList() { return S.msgs.map((m, i) => ({ m, i })).filter(x => x.m.file && ['doc', 'contact', 'audio', 'voice'].includes(x.m.kind)); }
+function linkList() {
+  const out = [];
+  S.msgs.forEach((m, i) => {
+    if (!m.text) return;
+    RE_URL.lastIndex = 0;
+    let mm;
+    while ((mm = RE_URL.exec(m.text))) out.push({ url: mm[0], i, m });
+  });
+  return out;
+}
+
+function renderPanel() {
+  const b = $('#pbody');
+  b.replaceChildren();
+  $('#panelTitle').textContent = { media: 'Media', docs: 'Docs and audio', links: 'Links', search: 'Search results', info: 'Chat info and settings' }[panelTab];
+  if (panelTab === 'media') {
+    const list = mediaList().reverse();
+    if (!list.length) return b.append(el('div', 'empty', 'No photos or videos in this export.'));
+    const g = el('div', 'grid');
+    b.append(g);
+    let n = 0;
+    const more = () => {
+      const stop = Math.min(list.length, n + 60);
+      for (; n < stop; n++) {
+        const { m, i } = list[n];
+        const c = el('div', 'cell');
+        c.dataset.mn = m.file.name;
+        c.dataset.type = m.kind === 'video' ? 'video' : 'image';
+        c.append(el(m.kind === 'video' ? 'video' : 'img'));
+        if (m.kind === 'video') { const bd = el('div', 'badge', 'Video'); c.append(bd); }
+        c.onclick = () => openLightbox(m.file.name);
+        g.append(c);
+        mediaIO.observe(c);
+      }
+      if (n < list.length) {
+        const btn = el('button', 'empty', 'Show older (' + (list.length - n) + ' left)');
+        btn.style.cssText = 'width:100%;padding:18px;color:var(--accent)';
+        btn.onclick = () => { btn.remove(); more(); };
+        b.append(btn);
+      }
+    };
+    more();
+  } else if (panelTab === 'docs') {
+    const list = docList().reverse();
+    if (!list.length) return b.append(el('div', 'empty', 'No documents or audio files.'));
+    list.slice(0, 400).forEach(({ m, i }) => {
+      const name = m.file.name.split('/').pop();
+      const r = el('div', 'lrow');
+      const fi = el('div', 'fi', extOf(name).slice(0, 4).toUpperCase());
+      fi.style.cssText = 'border-radius:3px;display:grid;place-items:center;color:#fff;font-size:8.5px;font-weight:700;background:' + (DOC_COLORS[extOf(name)] || '#5f6b74');
+      const lt = el('div', 'lt');
+      lt.append(el('div', 'l1', name));
+      lt.append(el('div', 'l2', [fmtSize(m.size), m.sender, m.when.toLocaleDateString()].filter(Boolean).join(' · ')));
+      r.append(fi, lt);
+      r.onclick = () => { $('#panel').classList.add('hidden'); jumpToMsg(i); };
+      b.append(r);
+    });
+  } else if (panelTab === 'links') {
+    const list = linkList().reverse();
+    if (!list.length) return b.append(el('div', 'empty', 'No links were shared in this chat.'));
+    list.slice(0, 600).forEach(({ url, i, m }) => {
+      const r = el('div', 'lrow');
+      const lt = el('div', 'lt');
+      lt.append(el('div', 'l1', m.text.replace(url, '').trim().slice(0, 90) || url));
+      lt.append(el('div', 'l3', url));
+      lt.append(el('div', 'l2', [m.sender, m.when.toLocaleDateString()].filter(Boolean).join(' · ')));
+      const go = el('a');
+      go.href = url.startsWith('http') ? url : 'https://' + url;
+      go.target = '_blank'; go.rel = 'noopener noreferrer'; go.className = 'hbtn';
+      go.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+      go.onclick = e => e.stopPropagation();
+      r.append(lt, go);
+      r.onclick = () => { $('#panel').classList.add('hidden'); jumpToMsg(i); };
+      b.append(r);
+    });
+  } else if (panelTab === 'search') {
+    if (!curQ) return b.append(el('div', 'empty', 'Type in the search bar above to find messages.'));
+    if (!hits.length) return b.append(el('div', 'empty', 'No messages match “' + curQ + '”.'));
+    hits.slice().reverse().slice(0, 500).forEach(i => {
+      const m = S.msgs[i];
+      const r = el('div', 'srow');
+      const s1 = el('div', 's1');
+      s1.append(el('span', null, m.sender || 'System'), el('span', null, m.when.toLocaleDateString() + ' ' + timeStr(m.when)));
+      const s2 = el('div', 's2');
+      s2.innerHTML = fmtBody(m.text || ('[' + (m.kind || 'message') + ']'), curQ);
+      r.append(s1, s2);
+      r.onclick = () => { if (innerWidth < 820) $('#panel').classList.add('hidden'); jumpToMsg(i); };
+      b.append(r);
+    });
+  } else {
+    renderInfo(b);
+  }
+}
+
+function renderInfo(b) {
+  const media = mediaList().length, docs = docList().length, links = linkList().length;
+  const first = S.msgs[0].when, last = S.msgs[S.msgs.length - 1].when;
+  const per = new Map();
+  S.msgs.forEach(m => { if (m.sender) per.set(m.sender, (per.get(m.sender) || 0) + 1); });
+
+  b.append(el('div', 'sec', 'Name and photo'));
+  const nr = el('div', 'opt');
+  const ni = el('input', 'txtin');
+  ni.type = 'text'; ni.value = S.profile.name || S.chatName; ni.placeholder = 'Chat name';
+  ni.oninput = () => { S.profile.name = ni.value.trim() || null; applyProfile(); saveProfile(); };
+  nr.append(labelBox('Chat name', 'Shown at the top of the chat.'), ni);
+  b.append(nr);
+
+  const pr = el('div', 'opt');
+  const prev = el('div', 'av');
+  prev.style.width = prev.style.height = '44px';
+  prev.style.fontSize = '15px';
+  paintAv(prev, S.profile.name || S.chatName, S.profile.photo);
+  const pbtn = el('button', 'minibtn', S.profile.photo ? 'Change' : 'Add photo');
+  pbtn.onclick = async () => {
+    const d = await pickImage();
+    if (d) { S.profile.photo = d; applyProfile(); saveProfile(); renderPanel(); }
+  };
+  pr.append(labelBox('Chat photo', 'Square crop, kept on this device only.'), prev, pbtn);
+  if (S.profile.photo) {
+    const x = el('button', 'minibtn', 'Remove');
+    x.onclick = () => { S.profile.photo = null; applyProfile(); saveProfile(); renderPanel(); };
+    pr.append(x);
+  }
+  b.append(pr);
+
+  b.append(el('div', 'sec', 'Photos for each person'));
+  S.senders.forEach(([n]) => {
+    const row = el('div', 'person');
+    const a = el('div', 'av');
+    a.style.width = a.style.height = '40px';
+    paintAv(a, n, S.profile.people[n]);
+    row.append(a, el('div', 'pn', n + (n === S.me ? ' (you)' : '')));
+    const set = el('button', 'minibtn', S.profile.people[n] ? 'Change' : 'Add');
+    set.onclick = async () => {
+      const d = await pickImage();
+      if (d) { S.profile.people[n] = d; saveProfile(); redraw(); renderPanel(); }
+    };
+    row.append(set);
+    if (S.profile.people[n]) {
+      const x = el('button', 'minibtn', 'Remove');
+      x.onclick = () => { delete S.profile.people[n]; saveProfile(); redraw(); renderPanel(); };
+      row.append(x);
+    }
+    b.append(row);
+  });
+
+  b.append(el('div', 'sec', 'Jump to a date'));
+  const jr = el('div', 'opt');
+  const inp = el('input'); inp.type = 'date';
+  inp.min = localISO(first);
+  inp.max = localISO(last);
+  inp.onchange = () => {
+    if (!inp.value) return;
+    const [y, mo, d] = inp.value.split('-').map(Number);
+    const key = dayKey(new Date(y, mo - 1, d));
+    let best = S.msgs.length - 1;
+    for (let i = 0; i < S.msgs.length; i++) { if (dayKey(S.msgs[i].when) >= key) { best = i; break; } }
+    if (innerWidth < 820) $('#panel').classList.add('hidden');
+    jumpToMsg(best);
+  };
+  jr.append(labelBox('Go to a day', 'Opens the chat at the first message of that date.'), inp);
+  b.append(jr);
+
+  b.append(el('div', 'sec', 'This chat'));
+  const stats = [
+    ['Messages', S.msgs.length.toLocaleString()],
+    ['Photos and videos', media.toLocaleString()],
+    ['Docs and audio', docs.toLocaleString()],
+    ['Links', links.toLocaleString()],
+    ['First message', first.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' })],
+    ['Last message', last.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' })],
+    ...[...per.entries()].sort((a, c) => c[1] - a[1]).map(([n, c]) => [n + (n === S.me ? ' (you)' : ''), c.toLocaleString() + ' messages'])
+  ];
+  stats.forEach(([k, v]) => { const s = el('div', 'stat'); s.append(el('span', null, k), el('b', null, v)); b.append(s); });
+
+  b.append(el('div', 'sec', 'Appearance'));
+  b.append(toggle('Dark theme', 'Easier at night, same as WhatsApp dark mode.', S.set.theme === 'dark', v => { S.set.theme = v ? 'dark' : 'light'; applySettings(); }));
+  b.append(toggle('Chat wallpaper', 'The doodle background behind the bubbles.', S.set.wall === 'on', v => { S.set.wall = v ? 'on' : 'off'; applySettings(); }));
+  b.append(toggle('Show delivery ticks', 'Decorative — an export does not record real read status.', S.set.ticks, v => { S.set.ticks = v; applySettings(); redraw(); }));
+  const fsr = el('div', 'opt');
+  const fsel = el('select');
+  [['13.2', 'Small'], ['14.8', 'Default'], ['16.4', 'Large'], ['18', 'Larger']].forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (+v === S.set.fs) o.selected = true; fsel.append(o); });
+  fsel.onchange = () => { S.set.fs = +fsel.value; applySettings(); saveSettings(); };
+  fsr.append(labelBox('Text size', 'Applies to message text.'), fsel);
+  b.append(fsr);
+
+  b.append(el('div', 'sec', 'Reading'));
+  const cr = el('div', 'opt');
+  const csel = el('select');
+  [['auto', 'Match device'], ['12', '12-hour'], ['24', '24-hour']].forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (v === S.set.clock) o.selected = true; csel.append(o); });
+  csel.onchange = () => { S.set.clock = csel.value; saveSettings(); redraw(); };
+  cr.append(labelBox('Clock format', ''), csel);
+  b.append(cr);
+
+  const dr = el('div', 'opt');
+  const dsel = el('select');
+  [['dmy', 'Day / month / year'], ['mdy', 'Month / day / year']].forEach(([v, t]) => { const o = el('option', null, t); o.value = v; if (v === (S.dmy ? 'dmy' : 'mdy')) o.selected = true; dsel.append(o); });
+  dsel.onchange = () => { S.set.order = dsel.value; reparse(); };
+  dr.append(labelBox('Date order in the export', 'Change this if the dates look wrong.'), dsel);
+  b.append(dr);
+
+  const wr = el('div', 'opt');
+  const wsel = el('select');
+  const none = el('option', null, 'Nobody'); none.value = ''; if (!S.me) none.selected = true; wsel.append(none);
+  S.senders.forEach(([n]) => { const o = el('option', null, n); o.value = n; if (n === S.me) o.selected = true; wsel.append(o); });
+  wsel.onchange = () => { S.me = wsel.value || null; DB.set('me', S.me || ''); redraw(); };
+  wr.append(labelBox('You are', 'Your messages sit on the right, in green.'), wsel);
+  b.append(wr);
+
+  b.append(el('div', 'sec', 'This device'));
+  b.append(toggle('Remember this chat', S.srcFile ? 'Keeps the .zip in this browser so it opens by itself next time.' : 'Only works when you open a .zip file, not a folder.', S.remember, async v => {
+    S.remember = v;
+    if (v && S.srcFile) {
+      await DB.set('zipfile', S.srcFile);
+      await DB.set('me', S.me);
+      const ok = await DB.get('zipfile');
+      if (!ok) {
+        S.remember = false;
+        r.querySelector('.sw').classList.remove('on');
+        r.querySelector('.o2').textContent = 'This browser blocks storage for files opened from disk. Put the page on a local server or a private web host to use this.';
+      } else {
+        r.querySelector('.o2').textContent = 'Saved. This chat opens by itself next time.';
+      }
+    } else { await DB.del('zipfile'); }
+  }));
+  const close = el('div', 'opt');
+  const cb = el('button', 'btn ghost', 'Open a different export');
+  cb.style.cssText = 'border-color:var(--line);color:var(--txt-2)';
+  cb.onclick = async () => { await DB.del('zipfile'); location.reload(); };
+  close.append(labelBox('Switch chat', ''), cb);
+  b.append(close);
+  b.append(el('div', 'empty', 'Nothing on this page ever leaves your device.'));
+}
+function labelBox(a, c) { const d = el('div', 'ol'); d.append(el('div', 'o1', a)); if (c) d.append(el('div', 'o2', c)); return d; }
+function toggle(a, c, on, fn) {
+  const r = el('div', 'opt');
+  const sw = el('div', 'sw' + (on ? ' on' : ''));
+  r.append(labelBox(a, c), sw);
+  r.onclick = () => { const v = !sw.classList.contains('on'); sw.classList.toggle('on', v); fn(v, r); saveSettings(); };
+  return r;
+}
+function redraw() { const s = S.win.s, e = S.win.e, t = scroller.scrollTop; renderWindow(s, e); scroller.scrollTop = t; }
+
+/* ---------------- lightbox ---------------------------------------------- */
+let lbList = [], lbPos = 0;
+async function openLightbox(name) {
+  lbList = mediaList();
+  lbPos = Math.max(0, lbList.findIndex(x => x.m.file.name === name));
+  $('#lb').classList.remove('hide');
+  await showLb();
+}
+async function showLb() {
+  const { m, i } = lbList[lbPos];
+  const body = $('#lbBody');
+  [...body.children].forEach(c => { if (!c.classList.contains('nav')) c.remove(); });
+  const u = await urlFor(m.file);
+  const node = m.kind === 'video' ? el('video') : el('img');
+  node.dataset.mn = m.file.name;
+  if (m.kind === 'video') { node.controls = true; node.autoplay = true; node.playsInline = true; }
+  node.src = u;
+  body.append(node);
+  $('#lbName').textContent = m.sender || 'Media';
+  $('#lbSub').textContent = m.when.toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' · ' + (lbPos + 1) + ' of ' + lbList.length;
+  $('#lbCap').textContent = m.text || '';
+  const dl = $('#lbDl'); dl.href = u; dl.download = m.file.name.split('/').pop();
+  $('#lbPrev').classList.toggle('hide', lbPos === 0);
+  $('#lbNext').classList.toggle('hide', lbPos >= lbList.length - 1);
+}
+function closeLb() { $('#lb').classList.add('hide'); const v = $('#lbBody video'); if (v) v.pause(); }
+$('#lbClose').onclick = closeLb;
+$('#lbPrev').onclick = () => { if (lbPos > 0) { lbPos--; showLb(); } };
+$('#lbNext').onclick = () => { if (lbPos < lbList.length - 1) { lbPos++; showLb(); } };
+$('#lbBody').onclick = e => { if (e.target.id === 'lbBody') closeLb(); };
+
+document.addEventListener('keydown', e => {
+  if (!$('#lb').classList.contains('hide')) {
+    if (e.key === 'Escape') closeLb();
+    if (e.key === 'ArrowLeft') $('#lbPrev').click();
+    if (e.key === 'ArrowRight') $('#lbNext').click();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); openSearch(); }
+  if (e.key === 'Escape') {
+    if (!$('#panel').classList.contains('hidden')) $('#panel').classList.add('hidden');
+    else if (!$('#searchbar').classList.contains('hide')) $('#closeSearch').click();
+  }
+});
+$('#btnMenu').onclick = () => openPanel('info');
+
+/* ---------------- settings ---------------------------------------------- */
+function applySettings() {
+  const r = document.documentElement;
+  r.dataset.theme = S.set.theme;
+  r.dataset.wall = S.set.wall;
+  r.style.setProperty('--fs', S.set.fs + 'px');
+  document.querySelector('meta[name=theme-color]').content = S.set.theme === 'dark' ? '#202c33' : '#f0f2f5';
+}
+function saveSettings() { DB.set('settings', JSON.parse(JSON.stringify(S.set))); }
+function saveProfile() { DB.set('profile:' + S.chatName, JSON.parse(JSON.stringify(S.profile))); }
+function applyProfile() {
+  const nm = S.profile.name || S.chatName;
+  $('#chatName').textContent = nm;
+  paintAv($('#chatAv'), nm, S.profile.photo);
+  document.title = nm;
+}
+
+/* ---------------- loading ----------------------------------------------- */
+const setup = $('#setup'), prog = $('#prog'), pbar = $('#pbar'), plabel = $('#plabel'), errBox = $('#err');
+function step(pct, txt) { prog.classList.remove('hide'); pbar.style.width = pct + '%'; plabel.textContent = txt; }
+function fail(msg) {
+  prog.classList.add('hide');
+  errBox.classList.remove('hide');
+  errBox.innerHTML = esc(msg) + '<br><br>Pick the file again, or unzip it first and use “Choose unzipped folder”.';
+}
+
+async function loadSource(src, file, label) {
+  errBox.classList.add('hide');
+  try {
+    step(8, 'Opening ' + label + '…');
+    await src.open();
+    S.src = src; S.srcFile = file || null;
+    const files = src.list();
+    if (!files.length) throw new Error('That archive is empty.');
+    S.index.byName = new Map(); S.index.byBase = new Map(); S.index.files = files;
+    for (const f of files) {
+      S.index.byName.set(f.name, f);
+      S.index.byBase.set(f.name.split('/').pop().toLowerCase(), f);
+    }
+    step(30, 'Looking for the chat transcript…');
+    const txts = files.filter(f => extOf(f.name) === 'txt').sort((a, b) => b.size - a.size);
+    const chatFile = txts.find(f => /_chat\.txt$/i.test(f.name)) || txts.find(f => /chat/i.test(f.name)) || txts[0];
+    if (!chatFile) throw new Error('No .txt transcript inside. Make sure you exported the chat, not just the media.');
+    step(52, 'Reading ' + chatFile.name.split('/').pop() + '…');
+    const blob = await src.blob(chatFile.name);
+    S.text = new TextDecoder('utf-8').decode(await blob.arrayBuffer());
+    step(72, 'Parsing messages…');
+    const res = parseChat(S.text, S.index);
+    S.msgs = res.msgs; S.dmy = res.dmy; S.senders = res.senders;
+    S.showNames = res.senders.length > 2;
+
+    const dir = chatFile.name.includes('/') ? chatFile.name.split('/').slice(-2)[0] : '';
+    let name = dir || (file ? file.name.replace(/\.zip$/i, '') : chatFile.name.replace(/\.txt$/i, ''));
+    name = name.replace(/^WhatsApp Chat (with |- )?/i, '').replace(/^_chat$/, '').trim();
+    S.chatName = name || (res.senders[0] ? res.senders[0][0] : 'Chat');
+
+    step(92, 'Almost there…');
+    S.profile = (await DB.get('profile:' + S.chatName)) || { name: null, photo: null, people: {} };
+    if (!S.profile.people) S.profile.people = {};
+    const savedMe = await DB.get('me');
+    if (savedMe && res.senders.some(s => s[0] === savedMe)) { S.me = savedMe; start(); }
+    else if (res.senders.length === 1) { S.me = null; start(); }
+    else askWho();
+  } catch (e) {
+    console.error(e);
+    fail(e.message || String(e));
+  }
+}
+
+function askWho() {
+  step(100, 'Ready');
+  const w = $('#who'), list = $('#whoList');
+  w.classList.remove('hide');
+  list.replaceChildren();
+  S.senders.slice(0, 40).forEach(([n, c]) => {
+    const b = el('button');
+    const a = el('div', 'av', initials(n));
+    a.style.background = avColor(n);
+    const t = el('div');
+    t.append(el('div', null, n));
+    const sm = el('div', null, c.toLocaleString() + ' messages');
+    sm.style.cssText = 'font-size:12px;color:#8696a0;margin-top:2px';
+    t.append(sm);
+    b.append(a, t);
+    b.onclick = () => { S.me = n; DB.set('me', n); start(); };
+    list.append(b);
+  });
+  const skip = el('button');
+  skip.innerHTML = '<div class="av" style="background:#5f6b74">–</div><div>None of these — show every message on the left</div>';
+  skip.onclick = () => { S.me = null; start(); };
+  list.append(skip);
+}
+
+function reparse() {
+  const forced = S.set.order === 'dmy';
+  const res = parseChat(S.text, S.index, forced);
+  S.msgs = res.msgs; S.dmy = res.dmy;
+  buildRows();
+  toBottom();
+  saveSettings();
+  renderPanel();
+}
+
+function start() {
+  buildRows();
+  setup.classList.add('hide');
+  $('#app').classList.remove('hide');
+  $('#chatSub').textContent = S.msgs.length.toLocaleString() + ' messages · ' +
+    S.msgs[0].when.toLocaleDateString([], { month: 'short', year: 'numeric' }) + ' – ' +
+    S.msgs[S.msgs.length - 1].when.toLocaleDateString([], { month: 'short', year: 'numeric' });
+  applyProfile();
+  toBottom();
+}
+
+/* ---------------- inputs ------------------------------------------------ */
+$('#pickZip').onclick = () => $('#fZip').click();
+$('#pickFolder').onclick = () => $('#fFolder').click();
+$('#fZip').onchange = e => { const f = e.target.files[0]; if (f) handleZip(f); };
+$('#fFolder').onchange = e => { if (e.target.files.length) loadSource(new FolderSource([...e.target.files]), null, 'folder'); };
+
+async function handleZip(f) {
+  if (typeof DecompressionStream === 'undefined') return fail('This browser is too old to unzip files. Update it, or unzip the export yourself and use “Choose unzipped folder”.');
+  await loadSource(new ZipSource(f), f, f.name);
+}
+
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => {
+  const items = [...(e.dataTransfer.files || [])];
+  if (!items.length) return;
+  if (items.length === 1 && /\.zip$/i.test(items[0].name)) handleZip(items[0]);
+  else loadSource(new FolderSource(items), null, 'files');
+});
+drop.onclick = () => $('#fZip').click();
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+
+/* ---------------- boot -------------------------------------------------- */
+(async () => {
+  const saved = await DB.get('settings');
+  if (saved) Object.assign(S.set, saved);
+  applySettings();
+  const f = await DB.get('zipfile');
+  if (f) {
+    S.remember = true;
+    step(5, 'Opening your saved chat…');
+    if (/\.zip$/i.test(f.name || '')) handleZip(f);
+    else loadSource(new FolderSource([f]), f, f.name);
+  }
+})();
+</script>
+</body>
+</html>
